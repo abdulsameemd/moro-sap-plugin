@@ -1,10 +1,10 @@
 # moro-sap-plugin v0.1
 
-**An agentic SDLC framework for DEWA SAP development, built and maintained by MORO HUB.**
+**An agentic SDLC framework for SAP development, built and maintained by MORO HUB.**
 
 This plugin packages a complete 11-stage AI-assisted development pipeline — covering everything from Fiori prototyping to ABAP/RAP backend generation, automated code review, and SAP transport governance — into one installable unit. Built using Claude Code, Anthropic's agentic coding tool, with custom skills, deterministic safety hooks, and slash commands.
 
-Any SAP team within DEWA can install it with a single command and get the complete framework — no manual setup, no copying files by hand.
+Any SAP team an install it with a single command and get the complete framework — no manual setup, no copying files by hand.
 
 ---
 
