@@ -21,7 +21,7 @@ moro-sap-plugin/
 ├── .claude/
 │   ├── settings.json         ← wires all 5 hooks into Claude Code
 │   ├── skills/
-│   │   ├── moro-design/      ← Layer 2: DEWA Fiori design system
+│   │   ├── moro-design/      ← Layer 2: Design team
 │   │   └── moro-code-review/ ← Layer 2: 38-point code review
 │   ├── hooks/
 │   │   ├── pre-lint-gate.js           ← PreToolUse: lint before write
@@ -89,5 +89,5 @@ reads `.claude/` on startup.
 
 ## Maintained by
 
-DEWA SAP Technical Services · MORO HUB · I&TF Division  
+SAP Technical Services · MORO HUB  
 Security standards owned by: DEWA Red Team (SEC-01 through SEC-06)
