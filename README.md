@@ -10,7 +10,7 @@ Any SAP team within DEWA can install it with a single command and get the comple
 
 ## What problem this solves
 
-SAP development in DEWA's SAP Technical Services division involves a long, repetitive pipeline: design a Fiori screen, generate the backend RAP artefacts, review the code, write the technical specification, validate and release the transport. Doing this manually with an AI assistant means re-explaining the rules every session and hoping the assistant follows them consistently.
+SAP development in DEWA's SAP Technical team involves a long, repetitive pipeline: design a Fiori screen, generate the backend RAP artefacts, review the code, write the technical specification, validate and release the transport. Doing this manually with an AI assistant means re-explaining the rules every session and hoping the assistant follows them consistently.
 
 This plugin turns those rules into enforced, deterministic behaviour:
 
