@@ -1,0 +1,19 @@
+{
+  "name": "moro-sap-plugin",
+  "version": "0.1.0",
+  "description": "DEWA SAP Agentic Development Kit — ADK Layer 5 Plugin. Bundles skills, hooks, agents, and commands into one installable package for any DEWA SAP team.",
+  "author": "DEWA SAP Technical Services · MORO HUB",
+  "license": "Proprietary",
+  "keywords": ["dewa", "sap", "agentic", "claude-code", "fiori", "abap", "rap", "cap"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "install-plugin": "node scripts/install.js",
+    "validate": "node scripts/validate.js"
+  },
+  "claudePlugin": {
+    "manifestVersion": "1.0",
+    "manifest": "manifest.json"
+  }
+}

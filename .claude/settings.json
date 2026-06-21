@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pre-lint-gate.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__abap-mcp-server__writeObjectSource",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/post-atc-check.js"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/session-start-handoff.js"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/stop-confirm-review.js"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/stop-approve-transport.js"
+          }
+        ]
+      }
+    ]
+  }
+}
