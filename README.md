@@ -101,7 +101,7 @@ These gates exist because a transport release to QAS is irreversible, and a code
 
 ## Background
 
-Built as part of an internal agentic engineering initiative at MORO HUB's SAP Technical Services division, supporting DEWA's SAP Centre of Excellence (I&TF — Innovation & The Future). The framework was developed iteratively across a series of internal hackathons, each tackling one layer of the architecture.
+Built as part of an internal agentic engineering initiative at MORO HUB's SAP Technical Services division, supporting DEWA's SAP Centre of Excellence (I&TF — Innovation & The Future). The framework was developed iteratively across a series of internal projects, each tackling one layer of the architecture.
 
 ## Maintained by
 
