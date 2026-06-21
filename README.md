@@ -30,7 +30,7 @@ moro-sap-plugin/
 │   │   ├── stop-confirm-review.js     ← Stop: CONFIRM REVIEW gate
 │   │   ├── stop-approve-transport.js  ← Stop: APPROVE TRANSPORT gate
 │   │   └── lib/
-│   ├── agents/               ← Layer 4: 6 agent stubs (next hackathon)
+│   ├── agents/               ← Layer 4: 6 agent stubs (next release)
 │   └── commands/
 │       ├── moro-start.md     ← /moro-start (Stages 1–3)
 │       ├── moro-review.md    ← /moro-review (Stage 7)
