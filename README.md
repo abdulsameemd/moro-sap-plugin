@@ -1,8 +1,8 @@
 # moro-sap-plugin v0.1
 
-**DEWA SAP Agentic Development Kit — ADK Layer 5**
+**MORO SAP Agentic Development Kit — ADK Layer 5**
 
-One installable package that gives any DEWA SAP team the complete 11-stage
+One installable package that gives any SAP team the complete 11-stage
 agentic development pipeline — skills, hooks, agents, and commands bundled
 and ready to run.
 
