@@ -1,144 +1,72 @@
-#!/usr/bin/env node
 /**
- * stop-approve-transport.js
- * ─────────────────────────────────────────────────────────────────
- * DEWA ADK Hook — Layer 3 · Stop
- * ─────────────────────────────────────────────────────────────────
- * Fires when Claude is about to stop at Stage 9/11.
- * Enforces APPROVE TRANSPORT governance gate.
- * After approval — triggers the Team Lead notification automatically.
- *
- * Trigger:   Stop — Claude completing response at Stage 9 or 11
- * Scope:     Only active when a transport has been validated
- * Behaviour: Deterministic — not AI.
- *
- * ADK hook contract:
- *   Input:  JSON via stdin { stop_reason, session_id, transcript }
- *   Output: exit 0 = allow stop
- *           exit 1 = block stop (stderr shown to Claude)
+ * stop-approve-transport.js — MORO SAP Plugin · Layer 3 Hook
+ * Event: Stop
+ * Gate: Blocks session end without APPROVE TRANSPORT
+ * Notification: Fires to configured provider (Power Automate / SMTP) after gate clears
  */
 
-'use strict';
+const fs   = require("fs");
+const path = require("path");
 
-const { log, PROJECT_ROOT } = require('./lib/logger');
-const { autoCommit }        = require('./lib/git-helper');
-const fs   = require('fs');
-const path = require('path');
+// ── Read Claude's stop event input ────────────────────────────────────────
+let input = "";
+process.stdin.on("data", chunk => { input += chunk; });
 
-const HOOK_NAME = 'stop-approve-transport';
+process.stdin.on("end", async () => {
+  let event = {};
+  try { event = JSON.parse(input); } catch (_) {}
 
-const TRANSPORT_FLAG = path.join(PROJECT_ROOT, 'docs', '.transport_validated');
-const TL_TRIGGER     = path.join(PROJECT_ROOT, 'docs', 'teamlead_notification_trigger.txt');
-const TS_DIR         = path.join(PROJECT_ROOT, 'docs');
-const SMOKE_FLAG     = path.join(PROJECT_ROOT, 'docs', '.smoke_test_passed');
+  const transcript = event.transcript || [];
 
-async function main() {
-  let input = '';
-  process.stdin.setEncoding('utf8');
-  for await (const chunk of process.stdin) input += chunk;
+  // ── Check if developer typed APPROVE TRANSPORT ─────────────────────────
+  const approved = transcript.some(msg =>
+    msg.role === "user" &&
+    typeof msg.content === "string" &&
+    msg.content.trim().toUpperCase().includes("APPROVE TRANSPORT")
+  );
 
-  let hookData;
-  try { hookData = JSON.parse(input); } catch { process.exit(0); }
-
-  const transcript = hookData.transcript || [];
-
-  // ── Stage 9: Transport validation gate ───────────────────────────
-  // Only activate if transport has been validated
-  if (!fs.existsSync(TRANSPORT_FLAG)) {
+  if (!approved) {
+    // Gate not cleared — block Claude from stopping
+    const output = {
+      decision: "block",
+      reason: [
+        "⛔ TRANSPORT GATE NOT CLEARED",
+        "",
+        "Transport validation is complete but you have not approved the release.",
+        "",
+        "Before approving, confirm:",
+        "  1. Smoke test passed",
+        "  2. Security review shows CLEARED FOR DEPLOYMENT",
+        "  3. Code review shows APPROVED",
+        "  4. Transport target is QAS (not PRD)",
+        "",
+        "Then type: APPROVE TRANSPORT",
+        "",
+        "A transport release to QAS is irreversible. This gate cannot be bypassed.",
+      ].join("\n"),
+    };
+    process.stdout.write(JSON.stringify(output));
     process.exit(0);
+    return;
   }
 
-  // Read transport number from flag file
-  let transportData = {};
+  // ── Gate cleared — fire notification ──────────────────────────────────
   try {
-    transportData = JSON.parse(fs.readFileSync(TRANSPORT_FLAG, 'utf8'));
-  } catch {}
-
-  const { transportNumber, appName, developer } = transportData;
-
-  // ── Stage 11: Check for APPROVE TRANSPORT in transcript ──────────
-  const approveReceived = transcript.some(msg =>
-    typeof msg.content === 'string' &&
-    /APPROVE\s+TRANSPORT/i.test(msg.content) &&
-    msg.role === 'user'
-  );
-
-  if (!approveReceived) {
-    // Check if smoke test was done (Stage 10 complete)
-    const smokeTestDone = fs.existsSync(SMOKE_FLAG);
-
-    if (!smokeTestDone) {
-      // Stage 9 complete — transport validated but NOT yet approved
-      // This is correct — just remind developer of next steps
-      console.log(
-        `\n✅ [DEWA Transport Gate] Transport ${transportNumber || 'validated'} — Stage 9 complete.\n\n` +
-        `Next steps:\n` +
-        `  Stage 10: Deploy to DEV → ui5 build → ADT upload → ICF activate → FLP tile\n` +
-        `  Stage 10: Run smoke test in DEV system\n` +
-        `  Stage 11: After smoke test passes → type: APPROVE TRANSPORT\n\n` +
-        `Transport will NOT be released until smoke test is confirmed.\n` +
-        `Reference: DEPLOY.md §6\n`
-      );
-      log('INFO', HOOK_NAME, `Transport ${transportNumber} validated — awaiting smoke test`);
-      process.exit(0);
+    const notifierPath = path.join(__dirname, "lib", "notifier.js");
+    if (fs.existsSync(notifierPath)) {
+      const { notify } = require(notifierPath);
+      await notify("approve_transport");
     }
-
-    // Smoke test done but no APPROVE TRANSPORT — block
-    process.stderr.write(
-      `\n🛑 [DEWA Transport Gate] BLOCKED — APPROVE TRANSPORT required.\n\n` +
-      `Smoke test complete. Transport ${transportNumber || ''} is ready for QAS release.\n\n` +
-      `To release transport to QAS:\n` +
-      `  1. Confirm smoke test passed (app loads, OData responds, RTL, Arabic, dark theme)\n` +
-      `  2. Type: APPROVE TRANSPORT\n\n` +
-      `This will:\n` +
-      `  → Write the TL notification trigger\n` +
-      `  → Watch script builds Outlook email\n` +
-      `  → Outlook opens pre-filled\n` +
-      `  → You click Send — Team Lead receives notification\n` +
-      `  → Team Lead imports to QAS via SAP STMS\n\n` +
-      `This gate cannot be bypassed. Reference: DEPLOY.md §6\n`
-    );
-    log('BLOCK', HOOK_NAME, 'BLOCKED — APPROVE TRANSPORT not received');
-    process.exit(1);
+  } catch (e) {
+    // Notification failure must never block the pipeline
+    console.error("[stop-approve-transport] Notification error (non-blocking):", e.message);
   }
 
-  // ── APPROVE TRANSPORT received — fire TL notification ─────────────
-  log('PASS', HOOK_NAME, 'APPROVE TRANSPORT received — writing TL notification trigger');
-
-  // Write trigger file for watch script
-  const triggerData = {
-    appName:     appName || 'Unknown App',
-    transport:   transportNumber || 'PENDING',
-    developer:   developer || process.env.USERNAME || 'Developer',
-    date:        new Date().toISOString().slice(0, 16).replace('T', ' '),
-    tsDocument:  fs.readdirSync(TS_DIR).find(f => f.match(/_TS_\d{8}\.md$/)) || '',
-    sessionLog:  fs.readdirSync(path.join(TS_DIR, 'session_logs') || TS_DIR)
-                   .filter(f => f.endsWith('.md')).sort().pop() || '',
-    reviewReport: 'review_report.md',
+  // ── Allow Claude to proceed ────────────────────────────────────────────
+  const output = {
+    decision: "allow",
+    reason: "APPROVE TRANSPORT received — transport gate cleared. Releasing to QAS.",
   };
-
-  fs.writeFileSync(TL_TRIGGER, JSON.stringify(triggerData, null, 2));
-  log('PASS', HOOK_NAME, `TL trigger written for ${triggerData.appName} · ${triggerData.transport}`);
-
-  // Auto-commit Stage 11
-  autoCommit(11, appName || 'App');
-
-  // Clean up flags
-  try { fs.unlinkSync(TRANSPORT_FLAG); } catch {}
-  try { fs.unlinkSync(SMOKE_FLAG); } catch {}
-
-  console.log(
-    `\n✅ [DEWA Transport Gate] APPROVED — ${transportData.transportNumber}\n\n` +
-    `Team Lead notification trigger written to /docs/\n` +
-    `Watch script will build the Outlook email automatically.\n` +
-    `Check that dewa-handoff-watch.js is running — Outlook will open.\n` +
-    `Click Send to notify the Team Lead.\n`
-  );
-
-  process.exit(0);
-}
-
-main().catch(e => {
-  log('WARN', HOOK_NAME, `Hook error: ${e.message} — stop allowed`);
+  process.stdout.write(JSON.stringify(output));
   process.exit(0);
 });
