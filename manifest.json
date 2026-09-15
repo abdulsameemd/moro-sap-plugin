@@ -1,99 +1,189 @@
 {
-  "manifestVersion": "1.0",
-  "plugin": {
-    "name": "moro-sap-plugin",
-    "version": "0.1.0",
-    "displayName": "DEWA SAP Agentic Development Kit",
-    "description": "Full ADK stack for DEWA SAP development — skills, hooks, agents, and commands bundled into one installable package. Covers the complete 11-stage pipeline from Fiori prototype to SAP transport.",
-    "author": "DEWA SAP Technical Services · MORO HUB",
-    "license": "Proprietary - DEWA Internal",
-    "targetTeams": ["SAP Technical Services", "DEWA I&TF", "Any DEWA SAP division"],
-    "requires": {
-      "claudeCode": ">=1.0.0",
-      "mcpServers": [
-        "SAPUI5 MCP Server",
-        "SAP Fiori MCP Server",
-        "abap-mcp-server",
-        "SAP CAP MCP Server"
+  "name": "moro-sap-plugin",
+  "version": "1.0.0",
+  "description": "MORO HUB SAP SDLC Agentic Toolkit – 5-layer framework for governed SAP development",
+  "author": "MORO HUB – SAP Technical Services",
+  "license": "Proprietary",
+  "layers": {
+    "layer1": {
+      "name": "Configuration",
+      "status": "complete",
+      "description": "13 .md configuration files loaded at every session start",
+      "files": [
+        "docs/CLAUDE.md",
+        "docs/CLAUDE_BACKEND.md",
+        "docs/GUARDRAILS.md",
+        "docs/DEPLOY.md",
+        "docs/CODEREVIEW.md",
+        "docs/DESIGN.md",
+        "docs/SAP_CLEAN_CORE.md",
+        "docs/TS_TEMPLATE.md",
+        "docs/INTEGRATION.md",
+        "docs/METRICS.md",
+        "docs/PROMPTS_BACKEND.md",
+        "docs/SKILL_SPECIFICATIONS.md",
+        "docs/OPUS_SKILL_PROMPTS.md"
       ]
+    },
+    "layer2": {
+      "name": "Skills",
+      "status": "complete",
+      "description": "2 agentskills.io-compliant skills with scoped tool access and DEWA security metadata",
+      "skills": [
+        {
+          "name": "moro-design",
+          "criticality": "low",
+          "llm-type": "cloud",
+          "model": "claude-sonnet-4-20250514",
+          "allowed-tools": ["Read", "Write", "Glob", "Grep"],
+          "owner": "Design CoE",
+          "path": ".claude/skills/moro-design/SKILL.md"
+        },
+        {
+          "name": "moro-code-review",
+          "criticality": "high",
+          "llm-type": "cloud",
+          "model": "claude-sonnet-4-20250514",
+          "allowed-tools": [
+            "mcp__abap__getObjectSource",
+            "mcp__abap__reviewAbapCode",
+            "mcp__abap__runAtcCheck",
+            "mcp__abap__syntaxCheck",
+            "mcp__abap__getObjectMetadata"
+          ],
+          "owner": "RedTeam – Security Findings",
+          "path": ".claude/skills/moro-code-review/SKILL.md"
+        }
+      ]
+    },
+    "layer3": {
+      "name": "Hooks",
+      "status": "complete",
+      "description": "5 deterministic hook scripts wired into Claude Code – cannot be bypassed",
+      "hooks": [
+        {
+          "event": "PreToolUse",
+          "file": ".claude/hooks/pre-lint-gate.js",
+          "matcher": "Write|Edit|MultiEdit",
+          "description": "Blocks file write if UI5 lint fails"
+        },
+        {
+          "event": "PostToolUse",
+          "file": ".claude/hooks/post-atc-check.js",
+          "matcher": "writeObjectSource",
+          "description": "ATC check after every ABAP write – reverts on failure"
+        },
+        {
+          "event": "SessionStart",
+          "file": ".claude/hooks/session-start-handoff.js",
+          "matcher": null,
+          "description": "Auto-loads handoff context at session start"
+        },
+        {
+          "event": "Stop",
+          "file": ".claude/hooks/stop-confirm-review.js",
+          "matcher": null,
+          "description": "Blocks session end without CONFIRM REVIEW"
+        },
+        {
+          "event": "Stop",
+          "file": ".claude/hooks/stop-approve-transport.js",
+          "matcher": null,
+          "description": "Blocks transport release without APPROVE TRANSPORT"
+        }
+      ]
+    },
+    "layer4": {
+      "name": "Subagents",
+      "status": "complete",
+      "description": "6 specialist agents – each invoked explicitly by the developer for their SDLC stage",
+      "agents": [
+        {
+          "name": "design-agent",
+          "command": "/moro-start",
+          "stages": "1-3",
+          "criticality": "low",
+          "llm-type": "cloud",
+          "model": "claude-sonnet-4-20250514",
+          "allowed-tools": ["Read", "Write", "Glob", "Grep", "mcp__sapui5__*"],
+          "path": ".claude/agents/design-agent.md"
+        },
+        {
+          "name": "backend-agent",
+          "command": "/moro-backend",
+          "stages": "4-6",
+          "criticality": "high",
+          "llm-type": "cloud",
+          "model": "claude-sonnet-4-20250514",
+          "allowed-tools": ["Read", "Glob", "Grep", "mcp__abap__getObjectSource", "mcp__abap__getObjectMetadata", "mcp__abap__searchObject", "mcp__abap__syntaxCheck", "mcp__abap__writeObjectSource"],
+          "path": ".claude/agents/backend-agent.md"
+        },
+        {
+          "name": "review-agent",
+          "command": "/moro-review",
+          "stages": "7",
+          "criticality": "high",
+          "llm-type": "cloud",
+          "model": "claude-sonnet-4-20250514",
+          "allowed-tools": ["Read", "Glob", "Grep", "mcp__abap__getObjectSource", "mcp__abap__reviewAbapCode", "mcp__abap__runAtcCheck", "mcp__sapui5__run_ui5_linter", "mcp__sapui5__run_manifest_validation"],
+          "path": ".claude/agents/review-agent.md"
+        },
+        {
+          "name": "ts-agent",
+          "command": "/moro-ts",
+          "stages": "8",
+          "criticality": "low",
+          "llm-type": "cloud",
+          "model": "claude-sonnet-4-20250514",
+          "allowed-tools": ["Read", "Write", "Glob", "Grep"],
+          "path": ".claude/agents/ts-agent.md"
+        },
+        {
+          "name": "security-agent",
+          "command": "/moro-security",
+          "stages": "9",
+          "criticality": "high",
+          "llm-type": "cloud",
+          "model": "claude-sonnet-4-20250514",
+          "allowed-tools": ["Read", "Glob", "Grep", "mcp__abap__getObjectSource", "mcp__abap__reviewAbapCode", "mcp__abap__runAtcCheck"],
+          "path": ".claude/agents/security-agent.md"
+        },
+        {
+          "name": "deploy-agent",
+          "command": "/moro-deploy",
+          "stages": "10-11",
+          "criticality": "high",
+          "llm-type": "cloud",
+          "model": "claude-sonnet-4-20250514",
+          "allowed-tools": ["Read", "Glob", "mcp__abap__getTransportDetails", "mcp__abap__listTransports", "mcp__abap__validateTransport", "mcp__abap__getObjectMetadata"],
+          "path": ".claude/agents/deploy-agent.md"
+        }
+      ]
+    },
+    "layer5": {
+      "name": "Plugin",
+      "status": "complete",
+      "description": "Installable plugin package – clone, validate, install in 3 commands",
+      "scripts": {
+        "validate": "scripts/validate.js",
+        "install": "scripts/install.js"
+      }
     }
   },
-  "layers": {
-    "skills": [
-      {
-        "name": "moro-design",
-        "path": ".claude/skills/moro-design/SKILL.md",
-        "layer": 2,
-        "criticality": "low",
-        "invocation": "invoked"
-      },
-      {
-        "name": "moro-code-review",
-        "path": ".claude/skills/moro-code-review/SKILL.md",
-        "layer": 2,
-        "criticality": "high",
-        "invocation": "always-on"
-      }
+  "commands": [
+    { "name": "moro-start",    "path": ".claude/commands/moro-start.md",    "agent": "design-agent",   "stages": "1-3"   },
+    { "name": "moro-backend",  "path": ".claude/commands/moro-backend.md",  "agent": "backend-agent",  "stages": "4-6"   },
+    { "name": "moro-review",   "path": ".claude/commands/moro-review.md",   "agent": "review-agent",   "stages": "7"     },
+    { "name": "moro-ts",       "path": ".claude/commands/moro-ts.md",       "agent": "ts-agent",       "stages": "8"     },
+    { "name": "moro-security", "path": ".claude/commands/moro-security.md", "agent": "security-agent", "stages": "9"     },
+    { "name": "moro-deploy",   "path": ".claude/commands/moro-deploy.md",   "agent": "deploy-agent",   "stages": "10-11" }
+  ],
+  "governance": {
+    "human-gates": [
+      { "gate": "CONFIRM REVIEW",    "hook": "stop-confirm-review.js",    "stage": 7  },
+      { "gate": "APPROVE TRANSPORT", "hook": "stop-approve-transport.js", "stage": 11 }
     ],
-    "hooks": [
-      {
-        "name": "pre-lint-gate",
-        "event": "PreToolUse",
-        "matcher": "Write|Edit|MultiEdit",
-        "path": ".claude/hooks/pre-lint-gate.js",
-        "layer": 3,
-        "stage": [3, 4]
-      },
-      {
-        "name": "post-atc-check",
-        "event": "PostToolUse",
-        "matcher": "mcp__abap-mcp-server__writeObjectSource",
-        "path": ".claude/hooks/post-atc-check.js",
-        "layer": 3,
-        "stage": [5]
-      },
-      {
-        "name": "session-start-handoff",
-        "event": "SessionStart",
-        "matcher": null,
-        "path": ".claude/hooks/session-start-handoff.js",
-        "layer": 3,
-        "stage": "all"
-      },
-      {
-        "name": "stop-confirm-review",
-        "event": "Stop",
-        "matcher": null,
-        "path": ".claude/hooks/stop-confirm-review.js",
-        "layer": 3,
-        "stage": [7]
-      },
-      {
-        "name": "stop-approve-transport",
-        "event": "Stop",
-        "matcher": null,
-        "path": ".claude/hooks/stop-approve-transport.js",
-        "layer": 3,
-        "stage": [11]
-      }
-    ],
-    "agents": [
-      { "name": "design-agent",   "model": "claude-sonnet-4-20250514", "tools": "fiori-mcp-only", "stage": [1,2,3], "status": "stub" },
-      { "name": "backend-agent",  "model": "claude-sonnet-4-20250514", "tools": "abap-mcp-only",  "stage": [4,5,6], "status": "stub" },
-      { "name": "review-agent",   "model": "claude-opus-4-20250514",   "tools": "read-only",      "stage": [7],     "status": "stub" },
-      { "name": "ts-agent",       "model": "claude-sonnet-4-20250514", "tools": "docs-only",      "stage": [8],     "status": "stub" },
-      { "name": "security-agent", "model": "claude-opus-4-20250514",   "tools": "read-only",      "stage": "any",   "status": "stub" },
-      { "name": "deploy-agent",   "model": "claude-sonnet-4-20250514", "tools": "adt-only",       "stage": [9,10,11],"status": "stub" }
-    ],
-    "commands": [
-      { "name": "dewa-start",  "trigger": "/moro-start",  "path": ".claude/commands/moro-start.md",  "stages": [1,2,3] },
-      { "name": "dewa-review", "trigger": "/moro-review", "path": ".claude/commands/moro-review.md", "stages": [7] },
-      { "name": "dewa-deploy", "trigger": "/moro-deploy", "path": ".claude/commands/moro-deploy.md", "stages": [9,10,11] }
-    ]
-  },
-  "install": {
-    "settingsJson": ".claude/settings.json",
-    "configFiles": "docs/",
-    "notes": "Run `node scripts/install.js <project-path>` to install into a project. The install script copies all layers into the target project and wires settings.json automatically."
+    "validation-checks": 38,
+    "published": "https://github.com/abdulsameemd/moro-sap-plugin"
   }
 }
